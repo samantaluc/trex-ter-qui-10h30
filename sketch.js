@@ -1,29 +1,19 @@
 var ground, invisibleGround, groundImage; //variavel do chão
-
 var trex, trex_running; //variavel do trex
-
 var cloud, cloudImage; //variavel da nuvem 01/12
-
 var obstacle1, obstacle2, obstacle3, obstacle4, obstacle5, obstacle6; 
 //variavel para carregar as imagens dos obstaculos 06/12
-
 var trex_collided; //variavel para o trex surpreso 08/12
-
 var score; //variavel para a pontuação 08/12
-
 var PLAY = 1; //variavel do jogo no estado de Jogar com valor para troca (switch) 08/12
-
 var END = 0; //variavel do jogo no estado de Final com valor para troca (switch) 08/12
-
 var gamestate = PLAY; //variavel de Estado de Jogo, sendo a inicial de Jogar 08/12
-
 var obstacles; //variavel para obstaculos (grupo) 08/12
-
 var clouds; //variavel para nuvens (grupo) 08/12
-
 var gameOver, restart; //variavel para Fim de Jogo e Reiniciar 13/12
-
 var gameOverImg, restartImg; //variavel para imagem de Game Over e Reiniciar 13/12
+
+var jumpSound, dieSound, checkPointSound; //variaveis para os sons 15/12 
 //---------------------------------------
 function preload(){
   //Preload vai carregar arquivos de imagem e som
@@ -37,11 +27,14 @@ function preload(){
   obstacle4 = loadImage("obstacle4.png");
   obstacle5 = loadImage("obstacle5.png");
   obstacle6 = loadImage("obstacle6.png");
-  trex_collided = loadImage("trex_collided.png"); //trex surpreso pela colisão 08/12
-
+  trex_collided = loadAnimation("trex_collided.png","trex_collided.png"); //trex surpreso pela colisão 08/12
 //imagens para reiniciar e game over 13/12
   restartImg = loadImage("restart.png");
   gameOverImg = loadImage("gameOver.png");
+//sons para pulo, tocar cacto e a cada 100 pontos tocar o som 15/12
+  jumpSound = loadSound("jump.mp3");
+  dieSound = loadSound("die.mp3");
+  checkPointSound = loadSound("checkpoint.mp3");
 }
 //---------------------------------------
 function setup(){
@@ -90,7 +83,7 @@ function setup(){
   trex.debug = false;
   //se False, não exibe o modelo de distancia de colisao 13/12
   //se True, exibe o modelo de distancia de colisao 13/12
-}
+} 
 //------------------------------------------
 function draw(){
   //Draw vai desenhar na nossa tela
@@ -100,10 +93,15 @@ function draw(){
     //exibe o texto de pontuação 08/12
     text("Pontuação" + score, 500, 50);
       //calcula a pontuação dividindo o total de frames gerados por 60 08/12
-    score = score + Math.round(frameCount/60);
+    //score = score + Math.round(frameCount/60);
+      //calcula a pontuação somente com o reinicio ou abertura do jogo 22/12
+    score = score + Math.round(getFrameRate/60);
+      //calcula a velocidade dividindo o total de pontos gerados por 100 e multiplicando por 3 20/12
+    ground.velocityX = -(4 + 3 * score/100);
       //pular quando a tecla espaço for pressionada e somente quando estiver acima do eixo y 100
     if(keyDown("space") && trex.y >= 100) {
       trex.velocityY = -10;
+      jumpSound.play(); //som do pulo 15/12
     }
       //trex voltar ao chão depois do pulo
     trex.velocityY = trex.velocityY + 0.8
@@ -115,10 +113,13 @@ function draw(){
      }
     spawnClouds(); //chama a função de gerar nuvens 01/12
     spawnObstacles();//chama a função de gerar obstaculos 06/12
-
+    if(score>0 && score%100 === 0){ //se a pontuação for maior que 0 e divisivel por 100 (100,200,...)
+      checkPointSound.play(); //toca o som a cada 100 pts 15/12
+    }
       //se os obstaculos tocarem o trex, o jogo acaba 13/12
     if(obstacles.isTouching(trex))
         { 
+          dieSound.play(); //som dele encostando no cacto 15/12
           gamestate = END; // mudar o estado de jogo para Final
         }
 
@@ -143,6 +144,10 @@ function draw(){
      //definir velocidade aos objetos do jogo para que nunca se movam 13/12
        obstacles.setVelocityXEach(0);
        clouds.setVelocityXEach(0);
+    //se clicar com o mouse no icone, chamar a função de reiniciar 22/12
+       if (mousePressedOver(restart)) {
+          reset();
+       }
   }
   //desenho dos sprites
   drawSprites(); 
@@ -171,9 +176,10 @@ function spawnClouds(){
       //adiciona as nuvens ao grupo de nuvem 13/12
     }}
 //função de gerar obstáculos 06/12
-function spawnObstacles(){  if (frameCount % 60 === 0){
+function spawnObstacles(){  
+  if (frameCount % 60 === 0){
     var obstacle = createSprite(400,165,10,40);
-    obstacle.velocityX = -6;
+    obstacle.velocityX = -(6 + score/100); //aumenta a velocidade conforme cada 100 pts 20/12
      //gerar obstáculos aleatórios
      var rand = Math.round(random(1,6));
      switch(rand) {
@@ -198,3 +204,18 @@ function spawnObstacles(){  if (frameCount % 60 === 0){
      obstacles.add(obstacle);
   }
  }
+
+function reset(){//funçao para reiniciar o jogo 22/12
+  //estado de jogo volta a PLAY/JOGAR
+  gamestate = PLAY;
+  //pontuação volta a zero
+  score = 0;
+  //destruir todos os sprites gerados para nuvens e obstaculos
+  obstacles.destroyEach();
+  clouds.destroyEach();
+  //visibilidade dos icones de Game Over e Restart são mudados
+  gameOver.visible = false;
+  restart.visible = false;
+  //deixar a animação do trex correndo novamente
+  trex.changeAnimation("running", trex_running);
+}
