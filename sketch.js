@@ -95,7 +95,7 @@ function draw(){
       //calcula a pontuação dividindo o total de frames gerados por 60 08/12
     //score = score + Math.round(frameCount/60);
       //calcula a pontuação somente com o reinicio ou abertura do jogo 22/12
-    score = score + Math.round(getFrameRate/60);
+    score = score + Math.round(getFrameRate()/60);
       //calcula a velocidade dividindo o total de pontos gerados por 100 e multiplicando por 3 20/12
     ground.velocityX = -(4 + 3 * score/100);
       //pular quando a tecla espaço for pressionada e somente quando estiver acima do eixo y 100
